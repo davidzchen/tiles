@@ -2,6 +2,9 @@
 
 Easy way to manage tmux sessions
 
+* Website: http://davidzchen.com/tiles
+* Repository: https://github.com/davidzchen/tiles
+
 ## Installation
 
 To install, simply put `tiles` in your `PATH.`
@@ -47,6 +50,8 @@ tmux_session(
 ```
 
 defines a tmux session named 'work' with two windows.
+
+For more info, see the [tiles documentation](http://davidzchen.com/tiles).
 
 ## Roadmap
 

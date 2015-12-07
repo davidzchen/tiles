@@ -108,6 +108,14 @@ default tmux session will be attached.
 Running this command is equivalent to running:
 
     $ tmux -2 attach-session <session-name>
+
+Options:
+
+    -v --verbose
+        Prints each command before it is run.
+
+    -h --help
+        Prints this help text.
 """
 
 LS_USAGE_TEXT = """
