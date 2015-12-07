@@ -60,6 +60,11 @@ For more info, see the [tiles documentation](http://davidzchen.com/tiles).
 * Long-term: Support GNU Screen
 * Long-term: Support configuring panes within windows
 
+## Acknowledgements
+
+The syntax of Tiles was inspired by that of the [Bazel build
+system](http://bazel.io).
+
 ## License
 
 `tiles` is licensed under the Apache 2.0 license:
