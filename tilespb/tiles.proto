@@ -1,0 +1,27 @@
+// Proto definitions for Tiles configs
+
+syntax = "proto3";
+
+package tilespb;
+option go_package = "github.com/davidzchen/tiles/tilespb";
+
+// Represents a Tiles config.
+message TilesConfig {
+  // List of tmux sessions.
+  repeated TmuxSession tmux_session = 1;
+}
+
+// Represents the configuration of a tmux session.
+message TmuxSession {
+  // Name of the tmux session.
+  string name = 1;
+
+  // Represents the configuration of a tmux window.
+  message Window {
+    // The window name.
+    string name = 1;
+    // The working directory of the window.
+    string dir = 2;
+  }
+  repeated Window window = 2;
+}
