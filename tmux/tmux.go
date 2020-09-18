@@ -39,12 +39,25 @@ func quote(str string) string {
 	return fmt.Sprintf("\"%s\"", str)
 }
 
-func HasSession(sessionName string) (bool, error) {
-	cmd := exec.Command("tmux", "has-session", "-t", quote(sessionName))
+var runAndGetStderr = func(cmd *exec.Cmd) (string, error) {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	output := stderr.String()
 	err := cmd.Run()
+	output := stderr.String()
+	return output, err
+}
+
+var runAndGetStdout = func(cmd *exec.Cmd) (string, error) {
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	output := stdout.String()
+	return output, err
+}
+
+func HasSession(sessionName string) (bool, error) {
+	cmd := exec.Command("tmux", "has-session", "-t", quote(sessionName))
+	output, err := runAndGetStderr(cmd)
 	if err != nil {
 		if strings.HasPrefix(output, "can't find session") {
 			return false, nil
@@ -78,8 +91,7 @@ func ListSessions() error {
 	return nil
 }
 
-func stateToProto(buf bytes.Buffer) (*tilespb.TilesConfig, error) {
-	output := buf.String()
+func stateToProto(output string) (*tilespb.TilesConfig, error) {
 	sessionMap := make(map[string]*tilespb.TmuxSession)
 	lines := strings.Split(output, "\n")
 	for _, line := range lines {
@@ -113,12 +125,11 @@ func stateToProto(buf bytes.Buffer) (*tilespb.TilesConfig, error) {
 
 func GetState() (*tilespb.TilesConfig, error) {
 	cmd := exec.Command("tmux", "list-windows", "-a", "-F", quote("#S:#W:#{pane_current_path}"))
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
+	output, err := runAndGetStdout(cmd)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to dump tmux windows")
 	}
-	return stateToProto(stdout)
+	return stateToProto(output)
 }
 
 func NewWindow(sessionName, windowName, directory string, windowId int) error {
