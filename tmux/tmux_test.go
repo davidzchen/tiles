@@ -12,6 +12,13 @@ import (
 )
 
 func TestStateToProto(t *testing.T) {
+	output1 := "default\n"
+	output2 := "default:src\n"
+	output3 := "default:logs:/var/log:\n"
+	output4 := "default:home:/home/dzc\n" +
+		"default:notes:/home/dzc/notes\n" +
+		"default:src:/home/dzc/go/src\n"
+
 	tests := []struct {
 		name       string
 		tmuxOutput string
@@ -23,6 +30,50 @@ func TestStateToProto(t *testing.T) {
 			tmuxOutput: "",
 			want:       &tilespb.TilesConfig{},
 			wantError:  "",
+		},
+		{
+			name:       "invalid-session-only",
+			tmuxOutput: output1,
+			want:       nil,
+			wantError:  "malformed tmux output line",
+		},
+		{
+			name:       "invalid-session-window-only",
+			tmuxOutput: output2,
+			want:       nil,
+			wantError:  "malformed tmux output line",
+		},
+		{
+			name:       "invalid-extra-colon",
+			tmuxOutput: output3,
+			want:       nil,
+			wantError:  "malformed tmux output line",
+		},
+		{
+			name:       "valid",
+			tmuxOutput: output4,
+			want: &tilespb.TilesConfig{
+				TmuxSession: []*tilespb.TmuxSession{
+					&tilespb.TmuxSession{
+						Name: "default",
+						Window: []*tilespb.TmuxSession_Window{
+							&tilespb.TmuxSession_Window{
+								Name: "home",
+								Dir:  "/home/dzc",
+							},
+							&tilespb.TmuxSession_Window{
+								Name: "notes",
+								Dir:  "/home/dzc/notes",
+							},
+							&tilespb.TmuxSession_Window{
+								Name: "src",
+								Dir:  "/home/dzc/src",
+							},
+						},
+					},
+				},
+			},
+			wantError: "",
 		},
 	}
 
@@ -84,10 +135,4 @@ func TestHasSession(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetState(t *testing.T) {
-	tests := []struct {
-		name string
-	}{}
 }
