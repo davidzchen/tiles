@@ -22,12 +22,9 @@ const (
 )
 
 var (
-	startCmd   = flag.NewFlagSet(startSubcommand, flag.ExitOnError)
-	attachCmd  = flag.NewFlagSet(attachSubcommand, flag.ExitOnError)
-	lsCmd      = flag.NewFlagSet(lsSubcommand, flag.ExitOnError)
-	saveCmd    = flag.NewFlagSet(saveSubcommand, flag.ExitOnError)
-	saveOutput = saveCmd.String("o", "", "File to save the current tmux configuration to")
-	helpCmd    = flag.NewFlagSet(helpSubcommand, flag.ExitOnError)
+	configPathFlag = flag.String("c", defaultConfigPath, "Path to the .tiles config file. Set to "+defaultConfigPath+" by default.")
+	saveCmd        = flag.NewFlagSet(saveSubcommand, flag.ExitOnError)
+	saveOutputFlag = saveCmd.String("o", "", "File to save the current tmux configuration to")
 
 	subcommands = []string{
 		startSubcommand,
@@ -43,19 +40,19 @@ func main() {
 		fmt.Println("expected \"save\", \"attach\", \"ls\", or \"save\" subcommands")
 		os.Exit(1)
 	}
+	flag.Parse()
 
-	args := os.Args[2:]
 	switch os.Args[1] {
 	case startSubcommand:
-		runStart(args)
+		runStart()
 	case attachSubcommand:
-		runAttach(args)
+		runAttach()
 	case lsSubcommand:
-		runLs(args)
+		runLs()
 	case saveSubcommand:
-		runSave(args)
+		runSave()
 	case helpSubcommand:
-		runHelp(args)
+		runHelp()
 	}
 }
 
@@ -69,6 +66,47 @@ func readConfig(path string) (*tilespb.TilesConfig, error) {
 		return nil, fmt.Errorf("%s: failed to parse config file: %v", path, err)
 	}
 	return config, nil
+}
+
+// getSessionName returns the session name passed in from the command line.
+func getSessionName(args []string) string {
+	sessionName := defaultSessionName
+	if len(args) > 1 {
+		sessionName = args[1]
+	}
+	return sessionName
+}
+
+func runStart() {
+	sessionName := getSessionName(flag.Args())
+	config, err := readConfig(*configPathFlag)
+	if err != nil {
+		fmt.Printf("%v", err)
+		os.Exit(2)
+	}
+
+	var tmuxSession *tilespb.TmuxSession
+	for _, s := range config.GetTmuxSession() {
+		if s.GetName() == sessionName {
+			tmuxSession = s
+			break
+		}
+	}
+	if tmuxSession == nil {
+		fmt.Printf("%s: tmux session not found in config: %s", *configPathFlag, sessionName)
+		os.Exit(2)
+	}
+
+	tmux.Start(tmuxSession)
+}
+
+func runAttach() {
+	sessionName := getSessionName(flag.Args())
+	tmux.AttachSession(sessionName)
+}
+
+func runLs() {
+	tmux.ListSessions()
 }
 
 func writeConfig(config *tilespb.TilesConfig, path string) error {
@@ -86,60 +124,19 @@ func writeConfig(config *tilespb.TilesConfig, path string) error {
 	return nil
 }
 
-func getSessionName(args []string) string {
-	sessionName := defaultSessionName
-	if len(args) > 0 {
-		sessionName = args[0]
-	}
-	return sessionName
-}
-
-func runStart(args []string) {
-	path := defaultConfigPath
-	sessionName := getSessionName(args)
-	config, err := readConfig(path)
-	if err != nil {
-		fmt.Printf("%v", err)
-		os.Exit(2)
-	}
-
-	var tmuxSession *tilespb.TmuxSession
-	for _, s := range config.GetTmuxSession() {
-		if s.GetName() == sessionName {
-			tmuxSession = s
-			break
-		}
-	}
-	if tmuxSession == nil {
-		fmt.Printf("%s: tmux session not found in config: %s", path, sessionName)
-		os.Exit(2)
-	}
-
-	tmux.Start(tmuxSession)
-}
-
-func runAttach(args []string) {
-	sessionName := getSessionName(args)
-	tmux.AttachSession(sessionName)
-}
-
-func runLs(args []string) {
-	tmux.ListSessions()
-}
-
-func runSave(args []string) {
-	path := defaultConfigPath
+func runSave() {
+	saveCmd.Parse(os.Args[2:])
 	state, err := tmux.GetState()
 	if err != nil {
 		fmt.Printf("failed to get tmux state: %v", err)
 		os.Exit(3)
 	}
-	if err := writeConfig(state, path); err != nil {
+	if err := writeConfig(state, *saveOutputFlag); err != nil {
 		fmt.Printf("failed to write tiles config: %v", err)
 		os.Exit(4)
 	}
 }
 
-func runHelp(args []string) {
-
+func runHelp() {
+	flag.PrintDefaults()
 }

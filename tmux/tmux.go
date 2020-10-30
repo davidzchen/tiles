@@ -55,40 +55,47 @@ var runAndGetStdout = func(cmd *exec.Cmd) (string, error) {
 	return output, err
 }
 
+var run = func(cmd *exec.Cmd, errMsg string) error {
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, errMsg)
+	}
+	return nil
+}
+
 func HasSession(sessionName string) (bool, error) {
+	if sessionName == "" {
+		return false, fmt.Errorf("sessionName cannot be empty")
+	}
 	cmd := exec.Command("tmux", "has-session", "-t", quote(sessionName))
 	output, err := runAndGetStderr(cmd)
 	if err != nil {
 		if strings.HasPrefix(output, "can't find session") {
 			return false, nil
 		}
-		return false, errors.Wrapf(err, "failed while checking for tmux session %s", sessionName)
+		return false, errors.Wrapf(err, "failed while checking for tmux session %q", sessionName)
 	}
 	return true, nil
 }
 
 func NewSession(sessionName string) error {
-	cmd := exec.Command("tmux", "new-session", "-d", "-s", quote(sessionName))
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "failed to start tmux session %s", sessionName)
+	if sessionName == "" {
+		return fmt.Errorf("sessionName cannot be empty")
 	}
-	return nil
+	cmd := exec.Command("tmux", "new-session", "-d", "-s", quote(sessionName))
+	return run(cmd, fmt.Sprintf("failed to start tmux session %q", sessionName))
 }
 
 func AttachSession(sessionName string) error {
-	cmd := exec.Command("tmux", "-2", "attach-session", "-t", quote(sessionName))
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "failed to attach to tmux session %s", sessionName)
+	if sessionName == "" {
+		return fmt.Errorf("sessionName cannot be empty")
 	}
-	return nil
+	cmd := exec.Command("tmux", "-2", "attach-session", "-t", quote(sessionName))
+	return run(cmd, fmt.Sprintf("failed to attach to tmux session %q", sessionName))
 }
 
 func ListSessions() error {
 	cmd := exec.Command("tmux", "list-sessions")
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to list tmux sessions")
-	}
-	return nil
+	return run(cmd, "failed to list tmux sessions")
 }
 
 func stateToProto(output string) (*tilespb.TilesConfig, error) {
@@ -133,25 +140,31 @@ func GetState() (*tilespb.TilesConfig, error) {
 }
 
 func NewWindow(sessionName, windowName, directory string, windowId int) error {
+	if sessionName == "" {
+
+	}
+	if windowName == "" {
+
+	}
+	if directory == "" {
+
+	}
 	cmd := exec.Command(
 		"tmux",
 		"new-window",
 		"-c", quote(directory),
 		"-t", fmt.Sprintf("\"%s:%d\"", sessionName, windowId),
 		"-n", quote(windowName))
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to create tmux window")
-	}
-	return nil
+	return run(cmd, fmt.Sprintf("tmux session %q: failed to create tmux window %q", sessionName, windowName))
 }
 
-func SelectWindow(sessionName string, windowId int32) error {
+func SelectWindow(sessionName string, windowId int) error {
+	if sessionName == "" {
+
+	}
 	cmd := exec.Command(
 		"tmux",
 		"select-window",
 		"-t", fmt.Sprintf("\"%s:%d\"", sessionName, windowId))
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to select tmux window")
-	}
-	return nil
+	return run(cmd, fmt.Sprintf("tmux session %q: failed to select tmux window %d", sessionName, windowId))
 }
