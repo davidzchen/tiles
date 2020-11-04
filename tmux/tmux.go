@@ -141,13 +141,13 @@ func GetState() (*tilespb.TilesConfig, error) {
 
 func NewWindow(sessionName, windowName, directory string, windowId int) error {
 	if sessionName == "" {
-
+		return fmt.Errorf("sessionName but must be set")
 	}
 	if windowName == "" {
-
+		return fmt.Errorf("windowName empty but must be set")
 	}
 	if directory == "" {
-
+		return fmt.Errorf("directory must be set")
 	}
 	cmd := exec.Command(
 		"tmux",
@@ -160,7 +160,7 @@ func NewWindow(sessionName, windowName, directory string, windowId int) error {
 
 func SelectWindow(sessionName string, windowId int) error {
 	if sessionName == "" {
-
+		return fmt.Errorf("sessionName must be set")
 	}
 	cmd := exec.Command(
 		"tmux",

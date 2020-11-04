@@ -310,11 +310,33 @@ func TestSelectWindow(t *testing.T) {
 		windowId    int
 		wantCmd     string
 		hasError    bool
-	}{}
+	}{
+		{
+			name:        "valid",
+			sessionName: "default",
+			windowId:    1,
+			wantCmd:     "tmux select-window -t \"default:1\"",
+			hasError:    false,
+		},
+		{
+			name:        "invalid-missing-session-name",
+			sessionName: "",
+			windowId:    1,
+			wantCmd:     "unused",
+			hasError:    true,
+		},
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
+			prevRun := run
+			defer func() {
+				run = prevRun
+			}
+			var gotCmd string
+			run = func(cmd *exec.Cmd) (string, error) {
+				
+			}
 		})
 	}
 }
